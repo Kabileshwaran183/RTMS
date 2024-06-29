@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Meter Readings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 50px;
+            color: #444;
+        }
+        table {
+            width: 70%;
+            border-collapse: collapse;
+            margin: 50px auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            text-transform: uppercase;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        td {
+            color: #555;
+        }
+        th, td {
+            font-size: 16px;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            width: 70%;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+            table {
+                width: 90%;
+            }
+            th, td {
+                padding: 10px;
+                font-size: 14px;
+            }
+            canvas {
+                width: 90%;
+            }
+        }
+    </style>
+    <!-- Include Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Meter Readings</h1>
+    <table id="readings-table">
+        <tr>
+            <th>ID</th>
+            <th>Branch</th>
+            <th>Meter 1</th>
+            <th>Meter 2</th>
+            <th>Meter 3</th>
+        </tr>
+    </table>
+
+    <!-- Bar Chart Canvas -->
+    <canvas id="bar-chart"></canvas>
+
+    <script>
+        function fetchReadings() {
+            fetch('/readings')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('readings-table');
+                    let rows = '';
+                    let labels = [];
+                    let meter1Data = [];
+                    let meter2Data = [];
+                    let meter3Data = [];
+                    
+                    data.forEach(row => {
+                        rows += `<tr>
+                                    <td>${row[0]}</td>
+                                    <td>${row[1]}</td>
+                                    <td>${row[2]}</td>
+                                    <td>${row[3]}</td>
+                                    <td>${row[4]}</td>
+                                 </tr>`;
+                        labels.push(`Branch ${row[0]}`);
+                        meter1Data.push(row[2]);
+                        meter2Data.push(row[3]);
+                        meter3Data.push(row[4]);
+                    });
+                    table.innerHTML = `<tr>
+                                        <th>ID</th>
+                                        <th>Branch</th>
+                                        <th>Meter 1</th>
+                                        <th>Meter 2</th>
+                                        <th>Meter 3</th>
+                                       </tr>` + rows;
+
+                    // Update or create bar chart
+                    updateBarChart(labels, meter1Data, meter2Data, meter3Data);
+                });
+        }
+
+        function updateBarChart(labels, meter1Data, meter2Data, meter3Data) {
+            // Get canvas element
+            const ctx = document.getElementById('bar-chart').getContext('2d');
+            
+            // Destroy the previous chart instance to prevent duplicates
+            if (window.barChart !== undefined) {
+                window.barChart.destroy();
+            }
+
+            // Create new bar chart instance
+            window.barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Meter 1',
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        data: meter1Data
+                    }, {
+                        label: 'Meter 2',
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        data: meter2Data
+                    }, {
+                        label: 'Meter 3',
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        data: meter3Data
+                    }]
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            stacked: true,
+                            gridLines: {
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            stacked: true,
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+
+        function updateReadings() {
+            fetch('/update_readings');
+        }
+
+        setInterval(() => {
+            updateReadings();
+            fetchReadings();
+        }, 1000);
+
+        document.addEventListener('DOMContentLoaded', fetchReadings);
+    </script>
+</body>
+</html>
